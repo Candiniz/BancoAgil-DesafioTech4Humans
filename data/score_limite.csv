@@ -1,0 +1,8 @@
+score_min,score_max,limite_maximo,perfil_risco
+0,299,0.00,Risco Extremo
+300,499,1000.00,Alto Risco
+500,599,2500.00,Risco Moderado
+600,699,5000.00,Risco Aceitável
+700,799,15000.00,Baixo Risco
+800,899,35000.00,Perfil Excelente
+900,1000,100000.00,Perfil Prime
