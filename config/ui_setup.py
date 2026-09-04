@@ -104,16 +104,11 @@ def renderizar_hero():
                 padding: 40px 20px;
             }}
             .hero img {{
-                width: 130px;
-            }}
-            .hero h1 {{
-                font-size: 24px;
+                width: 280px;
             }}
             .hero p {{
                 font-size: 14px;
-            }}
-            #RoundDiv {{
-                border-radius: 150px 150px 0 0;
+                margin-top: -10px;
             }}
         }}
     </style>
