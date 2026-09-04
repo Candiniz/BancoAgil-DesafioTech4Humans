@@ -31,7 +31,6 @@ O fluxo é coberto por 4 instâncias de raciocínio isoladas:
 ## Desafios Enfrentados e Soluções
 
 ### Desafio 1 — Ping-Pong de Agentes e Fuga de Escopo
-
 Em requisições complexas, agentes transferiam o usuário de volta para a Triagem em loop infinito ao lidarem com cenários de falha, como uma moeda não encontrada ou até mesmo quando eles não identificavam a solicitação dentro do seu escopo.
 
 > [!TIP]
@@ -40,7 +39,6 @@ Em requisições complexas, agentes transferiam o usuário de volta para a Triag
 > Foi implementada uma blindagem via engenharia de prompt, utilizando **Fixação de Escopo** e `temperature=0.0`. Os agentes foram instruídos a reter o cliente em casos de "dado não encontrado", restringindo a tag `[ROTA_TRIAGEM]` unicamente para solicitações envolvendo outros departamentos.
 
 ### Desafio 2 — Tela Branca do Streamlit
-
 Erros `503` e `429` da API do LLM podiam interromper a execução e comprometer a comunicação via WebSocket da interface, dificultando novas tentativas de processamento.
 
 > [!TIP]
@@ -51,7 +49,6 @@ Erros `503` e `429` da API do LLM podiam interromper a execução e comprometer 
 > Infelizmente, devido às limitações das chaves free-tier, a versão em produção pode enfrentar esperas prolongadas pelas respostas ou ondas de alta demanda, porém o front-end está lidando bem a situação, apresentando mensagens amigáveis ao usuário.
 
 ### Desafio 3 — Viés de Recência e Alucinações de Estado
-
 Ao ajustar limites, o Agente de Crédito poderia esquecer o valor anterior e afirmar ao usuário que o limite já estava no valor solicitado desde o início.
 
 > [!TIP]
@@ -60,7 +57,6 @@ Ao ajustar limites, o Agente de Crédito poderia esquecer o valor anterior e afi
 > Foi adicionada a regra de **Transparência Cronológica**, obrigando o agente a considerar e comunicar explicitamente os estados **antes e depois** da execução das ferramentas internas.
 
 ### Desafio 4 — Roteamento de WebSockets em Produção (VPS)
-
 Foi necessário garantir que o Streamlit, conteinerizado via Docker, mantivesse a comunicação bidirecional ativa através de um proxy reverso.
 
 > [!TIP]
@@ -69,7 +65,6 @@ Foi necessário garantir que o Streamlit, conteinerizado via Docker, mantivesse 
 > O Nginx foi removido da stack do Docker Compose e mantido instalado diretamente na VPS. Ele foi configurado para receber acessos em `bancoagil.duckdns.org` e encaminhá-los para `127.0.0.1:8501`, utilizando os headers HTTP necessários para o funcionamento dos WebSockets do Streamlit, incluindo `Upgrade` e `Connection`.
 
 ### Desafio 5 — Segurança e Certificação SSL
-
 A exposição da aplicação na internet exigia proteção da comunicação entre o cliente e o servidor sem interromper o acesso web existente.
 
 > [!TIP]
@@ -77,12 +72,149 @@ A exposição da aplicação na internet exigia proteção da comunicação entr
 >
 > Após validar o domínio apontando corretamente para a VPS e confirmar o funcionamento do proxy na porta 80, foi utilizado o **Certbot** com o plugin do Nginx, já instalado no host. O certificado **Let's Encrypt** foi emitido com sucesso, habilitando o acesso HTTPS na porta 443 e o redirecionamento automático de HTTP para HTTPS.
 
+### Desafio 6 — Segurança Determinística e Testes Unitários
+O comportamento probabilístico do LLM abria margem para alucinações lógicas (como tentar aprovar limites numéricos negativos) e permitia que o agente perdesse o controle de segurança após múltiplas falhas de autenticação.
+
+> [!TIP]
+> Solução
+> 
+> A responsabilidade das regras de negócio críticas foi transferida do prompt da IA para o código Python (backend). Foram criadas travas determinísticas > nas ferramentas (ex: `if limite_solicitado <= 0`) e implementada uma suíte de testes unitários com Pytest para homologar o isolamento das funções. Além disso, a segurança da interface foi ancorada no `st.session_state`: o Agente de Triagem agora emite a tag `[FALHA_AUTENTICACAO]` oculta ao falhar, onde o próprio Streamlit intercepta a terceira falha, desativando o chat_input forçadamente.
+
 ## Escolhas Técnicas e Justificativas
 * **Python & CrewAI:** Os escolhi pela robustez em orquestração de LLMs e facilidade em associar funções nativas de Python (Tools) ao raciocínio lógico dos agentes.
 * **Streamlit:** Permite a construção de uma interface de chat reativa com gerenciamento de sessão (st.session_state) nativo de forma extremamente ágil.
 * **Google Gemini (Flash Lite):** Optado pela alta velocidade de inferência e menor incidêcia de falhas com erro `503`, além do escopo free-tier de alta eficiência. A configuração de temperature=0.0 foi fundamental para assegurar execução determinística, eliminando o comportamento imprevisível em sistemas que lidam com fluxos financeiros.
 * **Pandas:** Framework padrão para tratar arquivos estruturados em memória de forma segura, com recursos nativos para mapear, mascarar e sobrepor chaves únicas (CPFs) em arquivos estáticos sem corromper matrizes de score.
 * **Docker Compose & Nginx Nativo:** O isolamento do backend no Docker garantiu a persistência segura dos dados locais (arquivos CSV manipulados pelos agentes) para um teste rápido sem risco de corrupção. A escolha por um Nginx nativo na VPS otimizou a segurança, viabilizando uma configuração HTTPS fluida com Certbot sem causar atritos de rede interna nos containers.
+
+## Testes com Pytest
+
+> [!TIP]
+> Eu realizei uma sequencia de testes lógicos das tools e de sistemas essenciais. Eles podem ser observados no bloco oculto a seguir:
+
+Os arquivos com os scripts dos testes estão no repositório (tools/tools_test.py & test_interface.py)
+
+<details>
+<summary>📋 Ver log completo dos testes</summary>
+  
+```
+======================================================================
+======================== test session starts =========================
+platform win32 -- Python 3.13.15, pytest-9.1.1, pluggy-1.6.0 --
+C:\Users\ander\Documents\ProjetosDev\Python\BancoAgil\venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\ander\Documents\ProjetosDev\Python\BancoAgil
+plugins: anyio-4.14.2, langsmith-0.12.0
+collected 7 items                                                                                                                                                              
+
+test_interface.py::test_bloqueio_interface_apos_tres_falhas 
+======================================================================
+TESTE: Bloqueio da interface após 3 falhas de autenticação
+======================================================================
+
+[1/4] Verificando estado inicial...
+      ✓ Chat habilitado inicialmente
+
+[2/4] Simulando 3 tentativas de autenticação...
+2026-09-04 16:48:55.934 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+      ✓ Contador definido para 3
+
+[3/4] Verificando bloqueio do chat...
+      ✓ Chat desabilitado corretamente
+
+[4/4] Verificando mensagem de bloqueio...
+      ✓ Mensagem exibida: 'Limite de tentativas de autenticação excedido. Seu acesso foi temporariamente bloqueado.'
+
+----------------------------------------------------------------------
+RESULTADO: ✓ TESTE APROVADO
+----------------------------------------------------------------------
+PASSED
+tools/tools_test.py::test_autenticacao_sucesso 
+======================================================================
+TESTE: Autenticação com dados válidos
+======================================================================
+
+[ENTRADA]
+  CPF: 000.000.000-00
+  Data de nascimento: 01/01/2001
+
+[SAÍDA]
+  Autenticado com sucesso. Nome do cliente: Anderson Candido Diniz
+
+RESULTADO: ✓ AUTENTICAÇÃO APROVADA
+PASSED
+tools/tools_test.py::test_autenticacao_falha 
+======================================================================
+TESTE: Autenticação com dados inválidos
+======================================================================
+
+[ENTRADA]
+  CPF: 000.000.000-00
+  Data de nascimento: 01/01/2000
+
+[SAÍDA]
+  Dados não conferem ou houve erro de sincronização. Peça de forma muito gentil e natural para o cliente verificar os dados e tentar novamente.
+
+RESULTADO: ✓ FALHA DE AUTENTICAÇÃO TRATADA CORRETAMENTE
+PASSED
+tools/tools_test.py::test_consultar_limite_sucesso 
+======================================================================
+TESTE: Consulta de limite com CPF válido
+======================================================================
+
+[ENTRADA]
+  CPF: 000.000.000-00
+
+[SAÍDA]
+  O limite atual do cliente é R$ 5000.0.
+
+RESULTADO: ✓ CONSULTA DE LIMITE APROVADA
+PASSED
+tools/tools_test.py::test_consultar_limite_falha_cpf 
+======================================================================
+TESTE: Consulta de limite com CPF inexistente
+======================================================================
+
+[ENTRADA]
+  CPF: 000.000.000-51
+
+[SAÍDA]
+  Erro: CPF não localizado.
+
+RESULTADO: ✓ CPF INEXISTENTE TRATADO CORRETAMENTE
+PASSED
+tools/tools_test.py::test_processar_credito_valor_negativo 
+======================================================================
+TESTE: Solicitação de crédito com valor inválido
+======================================================================
+
+[ENTRADA]
+  CPF: 377.986.848-24
+  Limite solicitado: R$ -500.00
+
+[SAÍDA]
+  Abortado: número negativo ou zerado.
+
+RESULTADO: ✓ VALOR INVÁLIDO BLOQUEADO
+PASSED
+tools/tools_test.py::test_processar_credito_cpf_inexistente 
+======================================================================
+TESTE: Solicitação de crédito com CPF inexistente
+======================================================================
+
+[ENTRADA]
+  CPF: 123.456.678.90
+  Limite solicitado: R$ 5000.00
+
+[SAÍDA]
+  Erro: CPF não localizado na base de clientes.
+
+RESULTADO: ✓ CPF INEXISTENTE TRATADO CORRETAMENTE
+PASSED
+
+=================== 7 passed, 12 warnings in 4.51s ===================
+```
+</details>
 
 ## Tutorial de Execução e Testes
 
