@@ -148,12 +148,12 @@ Utilize os dados mockados disponíveis no arquivo `data/clientes.csv` para reali
 > **Dados fictícios:** `data/clientes.csv` contém exclusivamente dados gerados artificialmente para fins de teste. A base não foi obtida de clientes reais e não contém dados pessoais reais.
 
 
-**Exemplo de dados para teste:**
+**Exemplo de dados para teste (autenticação):**
 
 ```text
 Nome: Anderson Candido Diniz
 CPF: 000.000.000-00
-Nascimento: 24/06/1995
+Nascimento: 01/01/2001
 ```
 
 #### 5.1 Teste de Câmbio
