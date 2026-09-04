@@ -4,32 +4,35 @@
 
 
 ## Visão Geral do Projeto
-O Banco Ágil é um sistema de atendimento ao cliente multiespecialista baseado em Inteligência Artificial, desenvolvido como solução para o Desafio Tech Recruiters. A aplicação simula um ambiente de suporte digital onde o usuário interage de forma fluida com um único Assistente Virtual, que nos bastidores orquestra uma rede de Agentes de IA autônomos. O sistema resolve demandas financeiras complexas, operando sob regras de negócio estritas para autenticação, consultas de crédito, recálculo de risco e cotações de moedas em tempo real.
+O Banco Ágil é um sistema de atendimento ao cliente multiespecialista beseado em IA, desenvolvido como solução para o Desafio Tech Recruiters. A aplicação simula um ambiente de suporte digital onde o usuário interage de forma fluida com um único Assistente Virtual, que nos bastidores orquestra uma rede de Agentes de IA autônomos. O sistema resolve algumas demandas financeiras pré definidas, operando sob regras de negócio estritas para autenticação, consultas de crédito, recálculo de risco e cotações de moedas em tempo real.
+Gostaria de agradecer antecipadamente à equipe da Tech For Humans, por disponibilizar este projeto. Foi uma experiência excelente de aprendizado desenvolver uma aplicação como esta.
 
 ## Arquitetura do Sistema
-O projeto foi construído utilizando o paradigma de Roteamento Multi-Hop Baseado em Tags. Em vez de forçar o LLM a gerenciar o estado da interface, a arquitetura separa completamente o Raciocínio (Backend) da Renderização (Frontend).
+O projeto foi construído utilizando o paradigma de _Roteamento Multi-Hop_ Baseado em Tags. Em vez de forçar o modelo a gerenciar o estado da interface, a arquitetura separa completamente o Raciocínio (Backend) da Renderização (Frontend).
 
-* **Unificação de Persona:** Todos os agentes (`Triagem`, `Crédito`, `Entrevista` e `Câmbio`) compartilham o mesmo _role_ primário ("Assistente Virtual do Banco Ágil"), garantindo que a transição entre especialistas seja completamente invisível ao usuário.
-* **Motor de Roteamento (app.py):** Um loop while intercepta tags ocultas geradas pelos agentes (ex: `[ROTA_CREDITO]`, `[ROTA_CAMBIO]`). Se uma tag é detectada, o motor elimina a tag da string e troca silenciosamente o agente ativo no session_state do Streamlit e reexecuta o rastro sem exigir uma nova entrada do usuário.
-* **Guilhotina de Tags:** Uma limpeza via Regex é aplicada no milissegundo final da cadeia para garantir que o cliente leia apenas linguagem natural, prevenindo o vazamento de sintaxe de sistema caso o limite máximo de saltos seja atingido.
-* **Manipulação de Dados:** O sistema utiliza pandas para ler e subscrever informações diretamente em arquivos estáticos locais (`clientes.csv`, `score_limite.csv` e `solicitacoes_aumento_limite.csv`), simulando transações ACID de um banco de dados relacional.
-* **Infraestrutura em Produção:** Foi construída uma arquitetura de backend baseada em Docker Compose, hospedando a aplicação Streamlit na porta 8501. O acesso externo ocorre de forma segura através [deste link](https://bancoagil.duckdns.org) (`bancoagil.duckdns.org`), orquestrado por um servidor Nginx instalado nativamente no host (VPS) atuando como Proxy Reverso.
+* **Unificação de Persona:** Todos os agentes (`Triagem`, `Crédito`, `Entrevista` e `Câmbio`) compartilham o mesmo papel(_role_) primário ("Assistente Virtual do Banco Ágil"), garantindo que a transição entre especialistas seja completamente invisível ao usuário e que as respostas do modelo não escapem algo que quebre a imersão.
+* **Motor de Roteamento (app.py):** Um loop while intercepta tags ocultas geradas pelos agentes (ex: `[ROTA_CREDITO]`, `[ROTA_CAMBIO]`). Se uma tag é detectada, o motor elimina a tag da string, troca silenciosamente o agente ativo no session_state do Streamlit e reexecuta o rastro sem exigir uma nova entrada do usuário.
+* **Guilhotina de Tags:** Uma trava de segurança após o roteador utiliza regex para eliminar qualquer tag que tenha chegado até ali por acidente, prevenindo o vazamento de sintaxe de sistema caso o limite máximo de saltos seja atingido.
+* **Manipulação de Dados:** Eu optei pelo Pandas para ler e subscrever informações diretamente em arquivos estáticos locais (`clientes.csv`, `score_limite.csv` e `solicitacoes_aumento_limite.csv`), simulando transações ACID (Atomicity, Consistency, Isolation, Durability) de um banco de dados relacional.
+* **Infraestrutura em Produção:** Para facilitar a avaliação e a experiência, desenvolvi uma arquitetura simples de backend baseada em Docker Compose, hospedando a aplicação Streamlit na porta 8501. O acesso externo ocorre de forma segura através [deste link](https://bancoagil.duckdns.org) (`bancoagil.duckdns.org`), orquestrado por um servidor Nginx instalado nativamente no host (VPS) atuando como Proxy Reverso.
 
 ## Funcionalidades Implementadas
 O fluxo é coberto por 4 instâncias de raciocínio isoladas:
 
-* **Agente de Triagem:** Atua como o porteiro do sistema. Exige e valida o CPF e a Data de Nascimento na base de dados e, em caso de sucesso, roteia o cliente pelo escopo da intenção inicial.
-* **Agente de Crédito:** Consulta saldos e limites na base. Processa aumentos checando uma matriz de risco em score_limite.csv. Caso reprovado, gera o log da transação e oferece transição para a reavaliação.
-* **Agente de Entrevista:** Assume a conversa temporariamente para coletar 5 variáveis financeiras (renda, emprego, dependentes, despesas e dívidas). Executa o recálculo ponderado, injeta o novo score no banco e devolve o cliente para o Crédito.
-* **Agente de Câmbio:** Consulta a AwesomeAPI via requisições HTTP para obter a conversão dinâmica em tempo real de qualquer par de moedas solicitado (ex: USD, EUR, JPY, CLP).
-* **Interface Responsiva (Mobile First):** Interface desenvolvida com abordagem mobile first, adaptando layout, tipografia, imagens e componentes de interação para diferentes tamanhos de tela, garantindo uma experiência consistente tanto em dispositivos móveis quanto em desktops.
-* **Infraestrutura Backend em Docker e VPS:** Aplicação conteinerizada com Docker e executada em uma VPS Oracle Cloud. O Nginx atua como proxy reverso, direcionando as requisições do domínio para a aplicação Streamlit, com configuração de HTTPS e certificado SSL via Let's Encrypt.
+><div align="left"><img src="https://i.imgur.com/wybeLqs.png" width="800"></div>
+
+>* **Agente de Triagem:** Atua como o porteiro do sistema. Exige e valida o CPF e a Data de Nascimento na base de dados e, em caso de sucesso, roteia o cliente pelo escopo da intenção inicial.
+>* **Agente de Crédito:** Consulta saldos e limites na base. Processa aumentos checando uma matriz de risco em score_limite.csv. Caso reprovado, gera o log da transação e oferece transição para a reavaliação.
+>* **Agente de Entrevista:** Assume a conversa temporariamente para coletar 5 variáveis financeiras (renda, emprego, dependentes, despesas e dívidas). Executa o recálculo ponderado, injeta o novo score no banco e devolve o cliente para o Crédito.
+>* **Agente de Câmbio:** Consulta a AwesomeAPI via requisições HTTP para obter a conversão dinâmica em tempo real de qualquer par de moedas solicitado (ex: USD, EUR, JPY, CLP).
+>* **Interface Responsiva (Mobile First):** Interface desenvolvida com abordagem mobile first, adaptando layout, tipografia, imagens e componentes de interação para diferentes tamanhos de tela, garantindo uma experiência consistente tanto em dispositivos móveis quanto em desktops.
+>* **Infraestrutura Backend em Docker e VPS:** Aplicação conteinerizada com Docker e executada em uma VPS Oracle Cloud. O Nginx atua como proxy reverso, direcionando as requisições do domínio para a aplicação Streamlit, com configuração de HTTPS e certificado SSL via Let's Encrypt.
 
 ## Desafios Enfrentados e Soluções
 
 ### Desafio 1 — Ping-Pong de Agentes e Fuga de Escopo
 
-Em requisições complexas, agentes transferiam o usuário de volta para a Triagem em loop infinito ao lidarem com cenários de falha, como uma moeda não encontrada.
+Em requisições complexas, agentes transferiam o usuário de volta para a Triagem em loop infinito ao lidarem com cenários de falha, como uma moeda não encontrada ou até mesmo quando eles não identificavam a solicitação dentro do seu escopo.
 
 > [!TIP]
 > **Solução**
@@ -43,7 +46,7 @@ Erros `503` e `429` da API do LLM podiam interromper a execução e comprometer 
 > [!TIP]
 > **Solução**
 >
-> A execução do CrewAI foi encapsulada na função `executar_com_retry`, responsável pelo tratamento de falhas temporárias. O estado visual foi transferido para um botão **"Tentar Novamente"**, permitindo recuperar o último prompt da sessão sem comprometer o histórico da interface.
+> A execução do CrewAI foi encapsulada na função `executar_com_retry`, responsável pelo tratamento de falhas temporárias. O estado visual foi transferido para um botão **"Tentar Novamente"**, permitindo recuperar o último prompt da sessão sem comprometer o histórico da interface, além de retornar uma mensagem amigável ao usuário.
 
 ### Desafio 3 — Viés de Recência e Alucinações de Estado
 
@@ -73,11 +76,11 @@ A exposição da aplicação na internet exigia proteção da comunicação entr
 > Após validar o domínio apontando corretamente para a VPS e confirmar o funcionamento do proxy na porta 80, foi utilizado o **Certbot** com o plugin do Nginx, já instalado no host. O certificado **Let's Encrypt** foi emitido com sucesso, habilitando o acesso HTTPS na porta 443 e o redirecionamento automático de HTTP para HTTPS.
 
 ## Escolhas Técnicas e Justificativas
-* **Python & CrewAI:** Escolhidos pela robustez em orquestração de LLMs e facilidade em associar funções nativas de Python (Tools) ao raciocínio lógico dos agentes.
+* **Python & CrewAI:** Os escolhi pela robustez em orquestração de LLMs e facilidade em associar funções nativas de Python (Tools) ao raciocínio lógico dos agentes.
 * **Streamlit:** Permite a construção de uma interface de chat reativa com gerenciamento de sessão (st.session_state) nativo de forma extremamente ágil.
-* **Google Gemini (Flash Lite):** Optado pela alta velocidade de inferência e menor incidêcia de falhas com erro `503`. A configuração de temperature=0.0 foi fundamental para assegurar execução determinística, eliminando o comportamento imprevisível em sistemas que lidam com fluxos financeiros.
+* **Google Gemini (Flash Lite):** Optado pela alta velocidade de inferência e menor incidêcia de falhas com erro `503`, além do escopo free-tier de alta eficiência. A configuração de temperature=0.0 foi fundamental para assegurar execução determinística, eliminando o comportamento imprevisível em sistemas que lidam com fluxos financeiros.
 * **Pandas:** Framework padrão para tratar arquivos estruturados em memória de forma segura, com recursos nativos para mapear, mascarar e sobrepor chaves únicas (CPFs) em arquivos estáticos sem corromper matrizes de score.
-* **Docker Compose & Nginx Nativo:** O isolamento do backend no Docker garantiu a persistência segura dos dados locais (arquivos CSV manipulados pelos agentes) sem risco de corrupção. A escolha por um Nginx nativo na VPS otimizou a segurança, viabilizando uma configuração HTTPS fluida com Certbot sem causar atritos de rede interna nos containers.
+* **Docker Compose & Nginx Nativo:** O isolamento do backend no Docker garantiu a persistência segura dos dados locais (arquivos CSV manipulados pelos agentes) para um teste rápido sem risco de corrupção. A escolha por um Nginx nativo na VPS otimizou a segurança, viabilizando uma configuração HTTPS fluida com Certbot sem causar atritos de rede interna nos containers.
 
 ## Tutorial de Execução e Testes
 
