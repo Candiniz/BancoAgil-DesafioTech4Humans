@@ -47,6 +47,8 @@ Erros `503` e `429` da API do LLM podiam interromper a execução e comprometer 
 > **Solução**
 >
 > A execução do CrewAI foi encapsulada na função `executar_com_retry`, responsável pelo tratamento de falhas temporárias. O estado visual foi transferido para um botão **"Tentar Novamente"**, permitindo recuperar o último prompt da sessão sem comprometer o histórico da interface, além de retornar uma mensagem amigável ao usuário.
+> > [!WARNING]
+> Infelizmente, devido às limitações das chaves free-tier, a versão em produção pode enfrentar esperas prolongadas pelas respostas ou ondas de alta demanda, porém o front-end está lidando bem a situação, apresentando mensagens amigáveis ao usuário.
 
 ### Desafio 3 — Viés de Recência e Alucinações de Estado
 
