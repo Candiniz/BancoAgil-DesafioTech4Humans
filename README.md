@@ -4,7 +4,7 @@
 
 
 ## Visão Geral do Projeto
-O Banco Ágil é um sistema de atendimento ao cliente multiespecialista beseado em IA, desenvolvido como solução para o Desafio Tech Recruiters. A aplicação simula um ambiente de suporte digital onde o usuário interage de forma fluida com um único Assistente Virtual, que nos bastidores orquestra uma rede de Agentes de IA autônomos. O sistema resolve algumas demandas financeiras pré definidas, operando sob regras de negócio estritas para autenticação, consultas de crédito, recálculo de risco e cotações de moedas em tempo real.
+O Banco Ágil é um sistema de atendimento ao cliente multiespecialista beseado em IA, desenvolvido como solução para o Desafio Tech For Humans. A aplicação simula um ambiente de suporte digital onde o usuário interage de forma fluida com um único Assistente Virtual, que nos bastidores orquestra uma rede de Agentes de IA autônomos. O sistema resolve algumas demandas financeiras pré definidas, operando sob regras de negócio estritas para autenticação, consultas de crédito, recálculo de risco e cotações de moedas em tempo real.
 Gostaria de agradecer antecipadamente à equipe da Tech For Humans, por disponibilizar este projeto. Foi uma experiência excelente de aprendizado desenvolver uma aplicação como esta.
 
 ## Arquitetura do Sistema
