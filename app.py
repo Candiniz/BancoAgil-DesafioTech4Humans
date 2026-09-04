@@ -31,6 +31,9 @@ if "mensagens" not in st.session_state:
         }
     ]
 
+if "tentativas_autenticacao" not in st.session_state:
+    st.session_state.tentativas_autenticacao = 0
+
 if "agente_ativo" not in st.session_state:
     st.session_state.agente_ativo = agente_triagem
 
@@ -91,7 +94,7 @@ def processar_mensagem(prompt_atual):
                 Não adicione nenhuma outra palavra.
                 """)
         else:
-            instrucao_extra = textwrap.dedent("""
+            instrucao_extra = textwrap.dedent(f"""
                 AVISO DO SISTEMA:
                 O cliente AINDA NÃO FOI AUTENTICADO.
 
@@ -130,6 +133,10 @@ def processar_mensagem(prompt_atual):
         verbose=True
     )
     resposta = str(crew.kickoff())
+
+    if "[FALHA_AUTENTICACAO]" in resposta:
+        st.session_state.tentativas_autenticacao += 1
+        resposta = resposta.replace("[FALHA_AUTENTICACAO]", "").strip()
 
     # --------------------------------------------------------
     # PROCESSAMENTO DAS ROTAS
@@ -283,8 +290,13 @@ def executar_com_retry(prompt):
 # ============================================================
 # INPUT
 # ============================================================
-prompt = st.chat_input("Digite sua mensagem:", disabled=st.session_state.sessao_encerrada)
-if st.session_state.sessao_encerrada:
+bloqueio_seguranca = st.session_state.get("tentativas_autenticacao", 0) >= 3
+trava_geral = bloqueio_seguranca or st.session_state.get("sessao_encerrada", False)
+
+prompt = st.chat_input("Digite sua mensagem:", disabled=trava_geral)
+if bloqueio_seguranca:
+    st.error("Limite de tentativas de autenticação excedido. Seu acesso foi temporariamente bloqueado.")
+elif st.session_state.get("sessao_encerrada", False):
     st.info("Atendimento encerrado. Conte sempre conosco! (Atualize a página (F5) para iniciar uma nova sessão)")
 
 if prompt:

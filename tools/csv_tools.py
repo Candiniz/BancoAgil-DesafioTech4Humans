@@ -61,8 +61,11 @@ def consultar_limite_conta(cpf: str) -> str:
 
 @tool("Processar Solicitação de Crédito")
 def processar_solicitacao_credito(cpf: str, limite_solicitado: float) -> str:
-    """Processa pedidos de ajuste de limite (AUMENTO ou REDUÇÃO) checando as faixas permitidas."""
-    try:
+    """Processa pedidos de ajuste de limite (APENAS AUMENTO) checando as faixas permitidas."""
+    try:       
+        if limite_solicitado <= 0:
+            return "Abortado: o valor solicitado deve ser maior que zero."
+
         cpf_num = re.sub(r'\D', '', str(cpf))
         cpf_limpo = f"{cpf_num[:3]}.{cpf_num[3:6]}.{cpf_num[6:9]}-{cpf_num[9:]}" if len(cpf_num) == 11 else str(cpf)
 
@@ -78,16 +81,15 @@ def processar_solicitacao_credito(cpf: str, limite_solicitado: float) -> str:
         # Converte dados do CSV para cálculo
         score_atual = int(df_clientes.at[cliente_idx, 'score'])
         limite_atual = float(df_clientes.at[cliente_idx, 'limite_atual'])
-        
-        # Reduções são aprovadas direto. Aumentos passam pela validação da matriz.
+
         if limite_solicitado <= limite_atual:
-            status = 'aprovado'
-        else:
-            faixa = df_score[(df_score['score_min'] <= score_atual) & (df_score['score_max'] >= score_atual)]
-            if faixa.empty:
-                return "Erro técnico: Score fora dos limites tabelados."
-            limite_maximo = float(faixa.iloc[0]['limite_maximo'])
-            status = 'aprovado' if limite_solicitado <= limite_maximo else 'rejeitado'
+            return "Abortado: somente solicitações de aumento de limite são permitidas."
+        
+        faixa = df_score[(df_score['score_min'] <= score_atual) & (df_score['score_max'] >= score_atual)]
+        if faixa.empty:
+            return "Erro técnico: Score fora dos limites tabelados."
+        limite_maximo = float(faixa.iloc[0]['limite_maximo'])
+        status = 'aprovado' if limite_solicitado <= limite_maximo else 'rejeitado'
         
         # Gera o log exigido pelo desafio
         arquivo_log = "data/solicitacoes_aumento_limite.csv"

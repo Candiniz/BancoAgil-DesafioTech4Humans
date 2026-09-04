@@ -16,7 +16,7 @@ def consultar_cotacao(moeda_origem: str, moeda_destino: str = "BRL") -> str:
         destino = moeda_destino.upper().strip()
         
         url = f"https://economia.awesomeapi.com.br/last/{origem}-{destino}"
-        response = requests.get(url)
+        response = requests.get(url, timeout=10)
         
         if response.status_code == 200:
             dados = response.json()
