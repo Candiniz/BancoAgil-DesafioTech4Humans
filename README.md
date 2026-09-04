@@ -1,4 +1,4 @@
-<div align="center"><img src="https://i.imgur.com/4q34k3q.png" width="500">
+<div align="center"><img src="https://i.imgur.com/4q34k3q.png" width="800">
 <h1>Banco Ágil - Assistente Virtual Inteligente</h1></div>
 
 
@@ -22,6 +22,8 @@ O fluxo é coberto por 4 instâncias de raciocínio isoladas:
 * **Agente de Crédito:** Consulta saldos e limites na base. Processa aumentos checando uma matriz de risco em score_limite.csv. Caso reprovado, gera o log da transação e oferece transição para a reavaliação.
 * **Agente de Entrevista:** Assume a conversa temporariamente para coletar 5 variáveis financeiras (renda, emprego, dependentes, despesas e dívidas). Executa o recálculo ponderado, injeta o novo score no banco e devolve o cliente para o Crédito.
 * **Agente de Câmbio:** Consulta a AwesomeAPI via requisições HTTP para obter a conversão dinâmica em tempo real de qualquer par de moedas solicitado (ex: USD, EUR, JPY, CLP).
+* **Interface Responsiva (Mobile First):** Interface desenvolvida com abordagem mobile first, adaptando layout, tipografia, imagens e componentes de interação para diferentes tamanhos de tela, garantindo uma experiência consistente tanto em dispositivos móveis quanto em desktops.
+* **Infraestrutura Backend em Docker e VPS:** Aplicação conteinerizada com Docker e executada em uma VPS Oracle Cloud. O Nginx atua como proxy reverso, direcionando as requisições do domínio para a aplicação Streamlit, com configuração de HTTPS e certificado SSL via Let's Encrypt.
 
 ## Desafios Enfrentados e Soluções
 
