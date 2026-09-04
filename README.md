@@ -333,3 +333,15 @@ O objetivo é verificar se o sistema mantém o escopo da aplicação e impede qu
 
 > [!NOTE]
 > Os dados disponibilizados em `data/clientes.csv` são **mockados** e destinados exclusivamente aos testes da aplicação. Não utilize dados reais de clientes neste ambiente.
+
+## Bugs Conhecidos
+
+### 1. Trava de autenticação
+- **Sintoma:** No deploy em VPS, o input pode continuar habilitado após 3 falhas de autenticação. Localmente, funciona corretamente.
+- **Causa Mapeada:** Inconsistência no gerenciamento de estado entre CrewAI e Streamlit em produção.
+- **Solução Proposta:** Revisar o controle de estado e implementar o bloqueio de forma independente da resposta do agente.
+
+### 2. Botão "Tentar Novamente"
+- **Sintoma:** Após falhas consecutivas da API (especialmente `503`), o botão 'Tente Novamente', ao ser pressionado a primeira vez, pode permanecer habilitado e um segundo clique pode interromper o fluxo de `resposta_pendente`.
+- **Causa Mapeada:** Inconsistência no gerenciamento de estado durante múltiplos reruns do Streamlit.
+- **Solução Proposta:** Reestruturar o fluxo de retry para controlar corretamente `resposta_pendente` e bloquear o botão durante a execução.
